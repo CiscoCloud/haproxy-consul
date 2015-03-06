@@ -21,5 +21,4 @@ frontend www
 backend {{ .Name }}_backend
 {{ range service .Name }}
    server {{ .Node }} {{ .Address }}:{{ .Port }}{{ end }}
-
-
+{{ end }}
