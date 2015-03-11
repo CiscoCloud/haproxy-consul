@@ -10,7 +10,7 @@ CONSUL_CONFIG=${CONSUL_CONFIG:-/consul-template/config.d}
 CONSUL_CONNECT=${CONSUL_CONNECT:-consul.service.consul:8500}
 CONSUL_MINWAIT=${CONSUL_MINWAIT:-2s}
 CONSUL_MAXWAIT=${CONSUL_MAXWAIT:-10s}
-CONSUL_LOGLEVEL=${CONSUL_LOGLEVEL:-info}
+CONSUL_LOGLEVEL=${CONSUL_LOGLEVEL:-debug}
 
 function usage {
 cat <<USAGE
@@ -34,7 +34,7 @@ Consul-template variables:
 USAGE
 
   CONSUL_LOGLEVEL       Valid values are "debug", "info", "warn", and "err".
-                        (default is "info")
+                        (default is "debug")
 
 USAGE
 }
