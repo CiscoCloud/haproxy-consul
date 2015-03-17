@@ -41,6 +41,34 @@ Now that it is set up, connect to an app registered via consul.
 curl -L http://myapp.mycompany.com
 ```
 
+## Options
+If you wish to override the config and template files, mount a volume and change the `CONSUL_CONFIG` environment variable upon launch. 
+
+
+```
+Configure using the following environment variables:
+
+  HAPROXY_DOMAIN        The domain to match against
+                        (default: example.com for app.example.com)
+
+Consul-template variables:
+  CONSUL_TEMPLATE       Location of consul-template bin 
+                        (default /usr/local/bin/consul-template)
+
+
+  CONSUL_CONNECT        The consul connection
+                        (default consul.service.consul:8500)
+
+  CONSUL_CONFIG         File/directory for consul-template config
+                        (/consul-template/config.d)
+
+
+  CONSUL_LOGLEVEL       Valid values are "debug", "info", "warn", and "err".
+                        (default is "debug")
+
+```
+
+
 # License
 Released under an Apache 2.0 License. See LICENSE
 
