@@ -42,7 +42,11 @@ curl -L http://myapp.mycompany.com
 ```
 
 ## Options
-If you wish to override the config and template files, mount a volume and change the `CONSUL_CONFIG` environment variable upon launch. 
+If you wish to override the config and template files, mount a volume and change the `CONSUL_CONFIG` environment variable upon launch. In docker this is via the `-e` option: 
+
+```
+docker run -v /host/config:/my_config -e CONSUL_CONFIG=/my_config -net=host --name=haproxy -d -e HAPROXY_DOMAIN=mycompany.com asteris/haproxy-consul 
+```
 
 
 ```
