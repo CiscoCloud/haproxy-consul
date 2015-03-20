@@ -41,6 +41,12 @@ Now that it is set up, connect to an app registered via consul.
 curl -L http://myapp.mycompany.com
 ```
 
+Or if you do not have a wildcard DNS
+
+```
+curl -L http://myapp.180.19.20.21.xip.io
+```
+
 ## Options
 If you wish to override the config and template files, mount a volume and change the `CONSUL_CONFIG` environment variable upon launch. In docker this is via the `-e` option: 
 
