@@ -2,7 +2,7 @@ FROM gliderlabs/alpine
 
 MAINTAINER Steven Borrelli <steve@aster.is>
 
-ENV CONSUL_TEMPLATE_VERSION=0.7.0
+ENV CONSUL_TEMPLATE_VERSION=0.8.0
 
 RUN apk-install bash haproxy
 
