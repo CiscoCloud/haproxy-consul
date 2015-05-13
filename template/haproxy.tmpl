@@ -1,24 +1,20 @@
 global
-    maxconn 256
+    maxconn {{or (key "service/haproxy/maxconn") 256}}
     debug
 
 defaults
-    mode http
-    timeout connect 5000ms
-    timeout client 50000ms
-    timeout server 50000ms
-
-frontend www
-    bind *:80
-
-    # Generated automatically by consul-template
-{{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ env "HAPROXY_DOMAIN" }} 
-    use_backend {{ .Name }}_backend if host_{{ .Name }}
-{{ end }}
-
-{{ range services }}
-backend {{ .Name }}_backend
-{{ range service .Name }}
-   server {{ .Node }} {{ .Address }}:{{ .Port }}{{ end }}
-{{ end }}
+    mode {{or (key "service/haproxy/mode") "tcp"}}
+    timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
+    timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
+    timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
+{{range ls "marathon"}}{{with $root := .}}{{with $app := parseJSON $root.Value}}{{range $index, $port := $app.ports}}
+listen {{$root.Key}}_{{$port}}
+    bind *:{{$port}}{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}{{else}}
+    # invalid JSON for task {{$taskIndex}}{{end}}{{else}}
+    # no tasks for {{$root.Key}}_{{$port}}{{end}}
+{{else}}
+# {{$root.Key}} has no ports
+{{end}}{{else}}
+# {{$root.Key}} is blank or invalid JSON
+{{end}}{{end}}{{end}}
