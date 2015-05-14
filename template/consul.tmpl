@@ -1,19 +1,19 @@
 global
-    maxconn 256
+    maxconn {{or (key "service/haproxy/maxconn") 256}}
     debug
 
 defaults
     mode http
-    timeout connect 5000ms
-    timeout client 50000ms
-    timeout server 50000ms
+    timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
+    timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
+    timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
 
 frontend www
     bind *:80
 
     # Generated automatically by consul-template
 {{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ env "HAPROXY_DOMAIN" }} 
+    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
     use_backend {{ .Name }}_backend if host_{{ .Name }}
 {{ end }}
 
