@@ -5,7 +5,7 @@ set -e
 [[ -n "$DEBUG" ]] && set -x
 
 # Required vars
-HAPROXY_MODE=consul
+HAPROXY_MODE=${HAPROXY_MODE:-consul}
 CONSUL_TEMPLATE=${CONSUL_TEMPLATE:-/usr/local/bin/consul-template}
 CONSUL_CONFIG=${CONSUL_CONFIG:-/consul-template/config.d}
 CONSUL_CONNECT=${CONSUL_CONNECT:-consul.service.consul:8500}
@@ -47,7 +47,8 @@ USAGE
 function launch_haproxy {
     vars=$@
 
-    cp /consul-template/template.d/${HAPROXY_MODE}.tmpl /consul-template/template.d/haproxy.tmpl
+    ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
+          /consul-template/template.d/haproxy.tmpl
 
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \
