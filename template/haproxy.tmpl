@@ -3,15 +3,54 @@ global
     debug
 
 defaults
-    mode {{or (key "service/haproxy/mode") "tcp"}}
+    mode tcp
     timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
     timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
     timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
-{{range ls "marathon"}}{{with $root := .}}{{with $app := parseJSON $root.Value}}{{range $index, $port := $app.ports}}
+
+# HTTP services
+frontend www
+    mode http
+    bind *:80
+
+    {{range ls "marathon"}}
+    {{with $root := .}}{{with $app := parseJSON $root.Value}}
+    {{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
+    # {{$root.Key}} ACLs
+    {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
+    acl host_{{$localName}} hdr(host) -i {{$localName}}.{{or (env "HAPROXY_DOMAIN") "haproxy.service.consul"}}
+    use_backend {{$localName}}_backend if host_{{$localName}}
+    {{else}}
+    # no HTTP forwarding information for {{$port}}
+    {{end}}{{end}}
+    {{end}}
+    {{else}}{{end}}{{end}}
+    {{end}}
+
+{{range ls "marathon"}}
+{{with $root := .}}{{with $app := parseJSON $root.Value}}
+{{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
+# {{$root.Key}} backends
+{{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
+backend {{$localName}}_backend{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
+{{end}}{{end}}{{else}}
+## no HTTP forwarding information for {{$port}}
+{{end}}{{end}}
+{{end}}
+{{else}}{{end}}{{end}}
+{{end}}
+
+# TCP services
+{{range ls "marathon"}}
+{{with $root := .}}{{with $app := parseJSON $root.Value}}
+{{range $index, $port := $app.ports}}
 listen {{$root.Key}}_{{$port}}
-    bind *:{{$port}}{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
-    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}{{else}}
-    # invalid JSON for task {{$taskIndex}}{{end}}{{else}}
+    mode tcp
+    bind *:{{$port}}
+    {{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
+    {{else}}{{end}}{{else}}
     # no tasks for {{$root.Key}}_{{$port}}{{end}}
 {{else}}
 # {{$root.Key}} has no ports
