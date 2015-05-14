@@ -10,6 +10,10 @@ Dynamic haproxy configuration using consul packed into a Docker container that w
     - [How it works](#how-it-works)
     - [Building](#building)
     - [Running](#running)
+        - [Modes](#modes)
+            - [consul Configuration](#consul-configuration)
+            - [Marathon Configuration](#marathon-configuration)
+        - [Usage](#usage)
     - [Options](#options)
 - [License](#license)
 
@@ -24,7 +28,7 @@ to create a proxy that forwards traffic to apps registered in Marathon and forwa
 
 First, you must set up a wildcard dns (using something like CloudFlare or [xip.io](http://xip.io)). This means that if your domain is `example.com`, any request to  a `<name>.example.com` will resolve to the IP of your haproxy container.
 
-Inside the haproxy container, a header match is used to map `<application>.example.com` to the service registered in consul under `aplication`.
+Inside the haproxy container, a header match is used to map `<application>.example.com` to the service registered in consul under `application`.
 
 ## Building
 
@@ -34,12 +38,30 @@ docker build -t haproxy .
 
 ## Running
 
-### Marathon Apps
+### Modes
+
+haproxy-consul can run in two different modes: forwarding either consul services
+(the default) or Marathon apps. This behavior is controlled by the
+`HAPROXY_MODE` variable, which should be set to `consul` or
+`marathon`.
+
+#### consul Configuration
+
+When `HAPROXY_MODE` is set to `consul`, haproxy-consul uses consul service names
+to set subdomains. No other configuration is required.
+
+#### Marathon Configuration
+
+When `HAPROXY_MODE` is set to `marathon`, haproxy-consul assumes that there will
+be app information in the `marathon` prefix of the Consul KV store. It was
+written to work with the information provided by
+[marathon-consul](https://github.com/CiscoCloud/marathon-consul).
 
 By default, haproxy will forward all Marathon-assigned ports. So if you specify
 that your application should forward on port 10001, haproxy will open port 10001
-and direct traffic to that port. This works with auto-assigned ports, as well.
-If you want HTTP load balancing using the host header, just specify some labels on your app:
+and direct traffic to that port. This works with auto-assigned ports (ports set
+to 0), as well. If you want HTTP load balancing using the host header, you need
+a specify the following labels on your app:
 
 ```
 {
@@ -78,13 +100,13 @@ If you have wildcard DNS set up for your company (say at `*.mycompany.com`) use 
 docker run --net=host --name=haproxy -d -e HAPROXY_DOMAIN=mycompany.com asteris/haproxy-consul
 ```
 
-Now that it is set up, connect to an app registered in Marathon.
+Now that it is set up, connect to an app:
 
 ```
 curl -L http://myapp.mycompany.com
 ```
 
-Or if you do not have a wildcard DNS
+Or if you do not have a wildcard DNS:
 
 ```
 curl -L http://myapp.180.19.20.21.xip.io
@@ -92,7 +114,7 @@ curl -L http://myapp.180.19.20.21.xip.io
 
 ## Options
 
-If you wish to override the config and template files, mount a volume and change the `CONSUL_CONFIG` environment variable upon launch. In docker this is via the `-e` option:
+If you want to override the config and template files, mount a volume and set the `CONSUL_CONFIG` environment variable before launch. In docker this can be accomplished with the `-e` option:
 
 ```
 docker run -v /host/config:/my_config -e CONSUL_CONFIG=/my_config -net=host --name=haproxy -d -e HAPROXY_DOMAIN=mycompany.com asteris/haproxy-consul
@@ -102,9 +124,10 @@ Configure using the following environment variables:
 
 Variable | Description | Default
 ---------|-------------|---------
-`HAPROXY_DOMAIN` | The domain to match against | `example.com` (for `app.example.com`). Defaults to `haproxy.service.consul`
+`HAPROXY_DOMAIN` | The domain to match against | `haproxy.service.consul` (for `app.haproxy.service.consul`).
+`HAPROXY_MODE` | forward consul service or Marathon apps | `consul` (`marathon` also available, as described [above](#modes))
 
-Consul-template variables:
+consul-template variables:
 
 Variable | Description | Default
 ---------|-------------|---------
@@ -113,7 +136,7 @@ Variable | Description | Default
 `CONSUL_CONFIG`   | File/directory for consul-template config | `/consul-template/config.d`
 `CONSUL_LOGLEVEL` | Valid values are "debug", "info", "warn", and "err". | `debug`
 
-Consul KV variables:
+consul KV variables:
 
 Variable | Description | Default
 ---------|-------------|---------
