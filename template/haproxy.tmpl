@@ -33,6 +33,7 @@ frontend www
 # {{$root.Key}} backends
 {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
 backend {{$localName}}_backend{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+    mode http
     {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
 {{end}}{{end}}{{else}}
 ## no HTTP forwarding information for {{$port}}
