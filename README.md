@@ -82,7 +82,8 @@ a specify the following labels on your app:
 In this example, `HAPROXY_HTTP` is set to true, which is required for HTTP load
 balancing. Then each of the port indices gets a name, as in
 `HTTP_PORT_IDX_0_NAME`. These will be balanced to `files.haproxy.service.consul`
-and `stub.haproxy.service.consul`, respectively.
+and `stub.haproxy.service.consul`, respectively. In addition, haproxy will
+forward all the ports that have been assigned as "global ports" by Marathon.
 
 ### Usage
 
