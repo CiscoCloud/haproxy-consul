@@ -45,6 +45,10 @@ USAGE
 }
 
 function launch_haproxy {
+    if [ "$(ls -A /usr/local/share/ca-certificates)" ]; then
+        cat /usr/local/share/ca-certificates/* >> /etc/ssl/certs/ca-certificates.crt
+    fi
+
     vars=$@
 
     ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \

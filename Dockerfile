@@ -4,7 +4,7 @@ MAINTAINER Steven Borrelli <steve@aster.is>
 
 ENV CONSUL_TEMPLATE_VERSION=0.8.0
 
-RUN apk-install bash haproxy
+RUN apk-install bash haproxy ca-certificates
 
 ADD https://github.com/hashicorp/consul-template/releases/download/v${CONSUL_TEMPLATE_VERSION}/consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.tar.gz /
 
