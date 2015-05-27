@@ -121,6 +121,9 @@ If you want to override the config and template files, mount a volume and set th
 docker run -v /host/config:/my_config -e CONSUL_CONFIG=/my_config -net=host --name=haproxy -d -e HAPROXY_DOMAIN=mycompany.com asteris/haproxy-consul
 ```
 
+If you need to have a root CA added so you can connect to Consul over SSL, mount
+a directory containing your root CA at `/usr/local/share/ca-certificates/`.
+
 Configure using the following environment variables:
 
 Variable | Description | Default
