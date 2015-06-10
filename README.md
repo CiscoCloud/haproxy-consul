@@ -84,6 +84,56 @@ balancing. Then each of the port indices gets a name, as in
 `HTTP_PORT_IDX_0_NAME`. These will be balanced to `files.haproxy.service.consul`
 and `stub.haproxy.service.consul`, respectively. In addition, haproxy will
 forward all the ports that have been assigned as "global ports" by Marathon.
+This ends up with a configuration like the following:
+
+```
+global
+    maxconn 256
+    debug
+
+defaults
+    mode tcp
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+# HTTP services
+frontend www
+    mode http
+    bind *:80
+
+    # files ACLs
+    acl host_files hdr(host) -i files.haproxy.service.consul
+    acl host_stub hdr(host) -i stub.haproxy.service.consul
+
+# files backends
+backend files_backend
+    mode http
+    server 1.2.3.4:49165 # TASK_RUNNING
+
+backend stub_backend
+    mode http
+    server 1.2.3.4:49166 # TASK_RUNNING
+
+# TCP services
+listen files_10000
+    mode tcp
+    bind *:10000
+    server task_name 1.2.3.4:41965 # TASK_RUNNING
+
+listen files_10001
+    mode tcp
+    bind *:10001
+    server task_name 1.2.3.4:49166 # TASK_RUNNING
+```
+
+In this case, Marathon has assigned ports `10000` and `10001` to the `[0, 0]`
+array provided in the app JSON, respective to their position within the array.
+The tasks are working on ports 49165 and 49166 (which again are respective to
+their position within the array.) This means that the haproxy service is
+listening on `10000` and `10001` to forward the ports themselves, and since HTTP
+names were given in the config labels, haproxy will also forward traffic to
+those ports where the host header is at `{name}.haproxy.service.consul`.
 
 ### Usage
 
