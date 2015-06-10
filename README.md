@@ -104,7 +104,9 @@ frontend www
 
     # files ACLs
     acl host_files hdr(host) -i files.haproxy.service.consul
+    use_backend files_backend if host_files
     acl host_stub hdr(host) -i stub.haproxy.service.consul
+    use_backend stub_backend if host_stub
 
 # files backends
 backend files_backend
