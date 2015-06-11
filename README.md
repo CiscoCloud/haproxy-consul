@@ -58,11 +58,13 @@ written to work with the information provided by
 [marathon-consul](https://github.com/CiscoCloud/marathon-consul).
 
 By default, haproxy will forward all Marathon-assigned ports. So if you specify
-in the "ports" member of the app JSON that your application should forward on
-port 10000, haproxy will open port 10000 and direct traffic to that port. This
-works with auto-assigned ports (ports set to 0), as well. If you want HTTP load
-balancing using the host header, you need a specify the following labels on your
-app:
+that your application should own port 10000 in the "ports" member of the app
+JSON, haproxy will open port 10000 to direct traffic to your app. This works
+with auto-assigned ports (ports set to 0), as well. This is all automatic, you
+don't need to think about it other than to pull the ports from Marathon.
+
+However, if you want HTTP load balancing using the host header, you need a
+specify the following labels on your app:
 
 ```
 {
