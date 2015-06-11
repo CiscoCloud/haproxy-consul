@@ -58,33 +58,47 @@ written to work with the information provided by
 [marathon-consul](https://github.com/CiscoCloud/marathon-consul).
 
 By default, haproxy will forward all Marathon-assigned ports. So if you specify
-that your application should forward on port 10001, haproxy will open port 10001
-and direct traffic to that port. This works with auto-assigned ports (ports set
-to 0), as well. If you want HTTP load balancing using the host header, you need
-a specify the following labels on your app:
+in the "ports" member of the app JSON that your application should forward on
+port 10000, haproxy will open port 10000 and direct traffic to that port. This
+works with auto-assigned ports (ports set to 0), as well. If you want HTTP load
+balancing using the host header, you need a specify the following labels on your
+app:
 
 ```
 {
-    "id": "files",
-    "cmd": "python -m SimpleHTTPServer $PORT",
-    "mem": 50,
-    "cpus": 0.1,
+    "id": "hello-rails",
+    "cmd": "cd hello && bundle install && bundle exec unicorn -p $PORT",
+    "mem": 100,
+    "cpus": 1.0,
     "instances": 1,
-    "ports": [0, 0],
+    "uris": [
+        "http://downloads.mesosphere.com/tutorials/RailsHello.tgz"
+    ],
+    "env": {
+        "RAILS_ENV": "production"
+    },
+    "ports": [10000],
     "labels": {
         "HAPROXY_HTTP": "true",
-        "HTTP_PORT_IDX_0_NAME": "files",
-        "HTTP_PORT_IDX_1_NAME": "stub"
+        "HTTP_PORT_IDX_0_NAME": "hello_rails",
     }
 }
 ```
 
-In this example, `HAPROXY_HTTP` is set to true, which is required for HTTP load
-balancing. Then each of the port indices gets a name, as in
-`HTTP_PORT_IDX_0_NAME`. These will be balanced to `files.haproxy.service.consul`
-and `stub.haproxy.service.consul`, respectively. In addition, haproxy will
-forward all the ports that have been assigned as "global ports" by Marathon.
-This ends up with a configuration like the following:
+In this example (available at [`examples/rails.json`](examples/rails.json)), the
+hello-rails application is assigned port 10000. This is different from the
+service or host port of the app; it is a global value that Marathon tracks. This
+means that haproxy-consul will forward all TCP traffic to port 10000 to the app
+workers.
+
+When `HAPROXY_HTTP` is set to true and `HTTP_PORT_IDX_0_NAME` is set to a
+DNS-valid name Haproxy will forward all HTTP traffic with the host header (the
+name specified plus [`HAPROXY_DOMAIN`](#options)) to the app workers. This
+extends to as many ports as you'd care to give it in the form
+`HTTP_PORT_IDX_{port_number}_NAME`.
+
+This particular app results in something like the following haproxy
+configuration:
 
 ```
 global
@@ -103,39 +117,20 @@ frontend www
     bind *:80
 
     # files ACLs
-    acl host_files hdr(host) -i files.haproxy.service.consul
-    use_backend files_backend if host_files
-    acl host_stub hdr(host) -i stub.haproxy.service.consul
-    use_backend stub_backend if host_stub
+    acl host_hello_rails hdr(host) -i hello_rails.haproxy.service.consul
+    use_backend hello_rails_backend if host_hello_rails
 
 # files backends
-backend files_backend
+backend hello_rails_backend
     mode http
     server 1.2.3.4:49165 # TASK_RUNNING
 
-backend stub_backend
-    mode http
-    server 1.2.3.4:49166 # TASK_RUNNING
-
 # TCP services
-listen files_10000
+listen hello-rails_10000
     mode tcp
     bind *:10000
-    server task_name 1.2.3.4:41965 # TASK_RUNNING
-
-listen files_10001
-    mode tcp
-    bind *:10001
-    server task_name 1.2.3.4:49166 # TASK_RUNNING
+    server task_id 1.2.3.4:41965 # TASK_RUNNING
 ```
-
-In this case, Marathon has assigned ports `10000` and `10001` to the `[0, 0]`
-array provided in the app JSON, respective to their position within the array.
-The tasks are working on ports 49165 and 49166 (which again are respective to
-their position within the array.) This means that the haproxy service is
-listening on `10000` and `10001` to forward the ports themselves, and since HTTP
-names were given in the config labels, haproxy will also forward traffic to
-those ports where the host header is at `{name}.haproxy.service.consul`.
 
 ### Usage
 

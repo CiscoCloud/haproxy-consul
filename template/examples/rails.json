@@ -1,0 +1,18 @@
+{
+    "id": "hello-rails",
+    "cmd": "cd hello && bundle install && bundle exec unicorn -p $PORT",
+    "mem": 100,
+    "cpus": 1.0,
+    "instances": 1,
+    "uris": [
+        "http://downloads.mesosphere.com/tutorials/RailsHello.tgz"
+    ],
+    "env": {
+        "RAILS_ENV": "production"
+    },
+    "ports": [10000],
+    "labels": {
+        "HAPROXY_HTTP": "true",
+        "HTTP_PORT_IDX_0_NAME": "hello_rails",
+    }
+}
