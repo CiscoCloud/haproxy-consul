@@ -34,7 +34,7 @@ frontend www
 {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
 backend {{$localName}}_backend{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
     mode http
-    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
+    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
 {{end}}{{end}}{{else}}
 ## no HTTP forwarding information for {{$port}}
 {{end}}{{end}}
@@ -50,7 +50,7 @@ listen {{$root.Key}}_{{$port}}
     mode tcp
     bind *:{{$port}}
     {{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
-    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.taskId}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
+    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
     {{else}}{{end}}{{else}}
     # no tasks for {{$root.Key}}_{{$port}}{{end}}
 {{else}}
