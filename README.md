@@ -188,6 +188,7 @@ Variable | Description | Default
 `CONSUL_CONNECT`  | The consul connection | `consul.service.consul:8500`
 `CONSUL_CONFIG`   | File/directory for consul-template config | `/consul-template/config.d`
 `CONSUL_LOGLEVEL` | Valid values are "debug", "info", "warn", and "err". | `debug`
+`CONSUL_TOKEN`    | The [Consul API token](http://www.consul.io/docs/internals/acl.html) | 
 
 consul KV variables:
 

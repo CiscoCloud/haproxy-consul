@@ -36,10 +36,12 @@ Consul-template variables:
 
   CONSUL_CONFIG         File/directory for consul-template config
                         (/consul-template/config.d)
-USAGE
 
   CONSUL_LOGLEVEL       Valid values are "debug", "info", "warn", and "err".
                         (default is "info")
+
+  CONSUL_TOKEN		Consul ACL token to use
+			(default is not set)
 
 USAGE
 }
@@ -47,6 +49,10 @@ USAGE
 function launch_haproxy {
     if [ "$(ls -A /usr/local/share/ca-certificates)" ]; then
         cat /usr/local/share/ca-certificates/* >> /etc/ssl/certs/ca-certificates.crt
+    fi
+
+    if [ -n "${CONSUL_TOKEN}" ]; then
+        ctargs="${ctargs} -token ${CONSUL_TOKEN}"
     fi
 
     vars=$@
@@ -57,7 +63,7 @@ function launch_haproxy {
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \
                        -wait ${CONSUL_MINWAIT}:${CONSUL_MAXWAIT} \
-                       -consul ${CONSUL_CONNECT} ${vars}
+                       -consul ${CONSUL_CONNECT} ${ctargs} ${vars}
 }
 
 launch_haproxy $@
