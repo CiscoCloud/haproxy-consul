@@ -14,7 +14,7 @@ frontend www
     bind *:80
 
     {{range ls "marathon"}}
-    {{with $root := .}}{{with $app := parseJSON $root.Value}}
+    {{with $root := .}}{{with $app := parseJSON $root.Value}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
     {{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
     # {{$root.Key}} ACLs
     {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
@@ -24,8 +24,10 @@ frontend www
     # no HTTP forwarding information for {{$port}}
     {{end}}{{end}}
     {{end}}
-    {{else}}{{end}}{{end}}
-    {{end}}
+    {{else}}
+    # no tasks for {{$root.Key}}, not generating any HTTP ACLs
+    {{end}}{{else}}{{end}}{{end}}{{/* end of with $root, $app, and $tasks */}}
+    {{end}}{{/* end of range "marathon" */}}
 
 # HTTP backends
 {{range ls "marathon"}}
