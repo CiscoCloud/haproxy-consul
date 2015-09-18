@@ -33,7 +33,7 @@ frontend www
 {{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
 # {{$root.Key}} backends
 {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
-backend {{$localName}}_backend{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+backend {{$localName}}_backend{{range $taskIndex, $taskJson := $tasks}}{{with $task := parseJSON $taskJson.Value}}
     mode http
     {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
 {{end}}{{/* end for with $task */}}
@@ -53,16 +53,18 @@ backend {{$localName}}_backend{{range $taskIndex, $taskJson := ls (printf "marat
 # TCP services
 {{range ls "marathon"}}
 {{with $root := .}}{{with $app := parseJSON $root.Value}}
-{{range $index, $port := $app.ports}}
+{{range $index, $port := $app.ports}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
 listen {{$root.Key}}_{{$port}}
     mode tcp
     bind *:{{$port}}
-    {{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+    {{range $taskIndex, $taskJson := $tasks}}{{with $task := parseJSON $taskJson.Value}}
     {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
     {{else}}{{end}}{{else}}
     # no tasks for {{$root.Key}}_{{$port}}{{end}}
-{{else}}
+{{else}}{{/* else for with $tasks */}}
+# no tasks for backend (port {{$port}}), not generating
+{{end}}{{else}}
 # {{$root.Key}} has no ports
 {{end}}{{else}}
 # {{$root.Key}} is blank or invalid JSON
-{{end}}{{end}}{{end}}
+{{end}}{{end}}{{end}}{{/* ends for outer range, with $root, and with $app */}}
