@@ -35,9 +35,10 @@ frontend www
 {{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
 # {{$root.Key}} backends
 {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
-backend {{$localName}}_backend{{range $taskIndex, $taskJson := $tasks}}{{with $task := parseJSON $taskJson.Value}}
+backend {{$localName}}_backend
     mode http
-    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
+    {{range $taskIndex, $taskJson := $tasks}}{{with $task := parseJSON $taskJson.Value}}
+    server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
 {{end}}{{/* end for with $task */}}
 {{end}}{{/* end for range $taskIndex, $taskJson... */}}
 {{else}}{{/* else for with $tasks */}}
