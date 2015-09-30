@@ -47,23 +47,23 @@ USAGE
 }
 
 function launch_haproxy {
-    if [ "$(ls -A /usr/local/share/ca-certificates)" ]; then
+    vars=(${@})
+
+    if [[ $(ls -A /usr/local/share/ca-certificates) ]]; then
         cat /usr/local/share/ca-certificates/* >> /etc/ssl/certs/ca-certificates.crt
     fi
 
-    if [ -n "${CONSUL_TOKEN}" ]; then
+    if [[ -n ${CONSUL_TOKEN} ]]; then
         ctargs="${ctargs} -token ${CONSUL_TOKEN}"
     fi
 
-    vars=$@
-
-    ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
+    ln -s "/consul-template/template.d/${HAPROXY_MODE}.tmpl" \
           /consul-template/template.d/haproxy.tmpl
 
-    ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
-                       -log-level ${CONSUL_LOGLEVEL} \
-                       -wait ${CONSUL_MINWAIT}:${CONSUL_MAXWAIT} \
-                       -consul ${CONSUL_CONNECT} ${ctargs} ${vars}
+    "${CONSUL_TEMPLATE}" -config "${CONSUL_CONFIG}" \
+                         -log-level "${CONSUL_LOGLEVEL}" \
+                         -wait "${CONSUL_MINWAIT}:${CONSUL_MAXWAIT}" \
+                         -consul "${CONSUL_CONNECT}" "${ctargs}" "${vars[]}"
 }
 
-launch_haproxy $@
+launch_haproxy "$@"
