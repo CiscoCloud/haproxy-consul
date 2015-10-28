@@ -14,7 +14,7 @@ frontend www
     bind *:80
 
     {{range ls "marathon"}}
-    {{with $root := .}}{{with $app := parseJSON $root.Value}}
+    {{with $root := .}}{{with $app := parseJSON $root.Value}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
     {{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
     # {{$root.Key}} ACLs
     {{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
@@ -24,37 +24,50 @@ frontend www
     # no HTTP forwarding information for {{$port}}
     {{end}}{{end}}
     {{end}}
-    {{else}}{{end}}{{end}}
-    {{end}}
+    {{else}}
+    # no tasks for {{$root.Key}}, not generating any HTTP ACLs
+    {{end}}{{else}}{{end}}{{end}}{{/* end of with $root, $app, and $tasks */}}
+    {{end}}{{/* end of range "marathon" */}}
 
+# HTTP backends
 {{range ls "marathon"}}
 {{with $root := .}}{{with $app := parseJSON $root.Value}}
 {{if eq (print $app.labels.HAPROXY_HTTP) "true"}}
 # {{$root.Key}} backends
-{{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}
-backend {{$localName}}_backend{{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+{{range $index, $port := $app.ports}}{{with $localName := index $app.labels (printf "HTTP_PORT_IDX_%d_NAME" $index)}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
+backend {{$localName}}_backend
     mode http
-    {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
-{{end}}{{end}}{{else}}
+    {{range $taskIndex, $taskJson := $tasks}}{{with $task := parseJSON $taskJson.Value}}
+    server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
+{{end}}{{/* end for with $task */}}
+{{end}}{{/* end for range $taskIndex, $taskJson... */}}
+{{else}}{{/* else for with $tasks */}}
+# no tasks for backend, not generating
+{{end}}{{/* end for with $tasks */}}
+{{else}}{{/* else for with $localName */}}
 ## no HTTP forwarding information for {{$port}}
-{{end}}{{end}}
-{{end}}
-{{else}}{{end}}{{end}}
-{{end}}
+{{end}}{{/* end with $localName */}}
+{{end}}{{/* end range over $app.ports */}}
+{{end}}{{/* end if eq ... */}}
+{{else}}{{end}}{{/* else and end with $app */}}
+{{end}}{{/* end with $root */}}
+{{end}}{{/* end range over marathon tasks */}}
 
 # TCP services
 {{range ls "marathon"}}
 {{with $root := .}}{{with $app := parseJSON $root.Value}}
-{{range $index, $port := $app.ports}}
+{{range $index, $port := $app.ports}}{{with $tasks := ls (printf "marathon/%s/tasks" $root.Key)}}
 listen {{$root.Key}}_{{$port}}
     mode tcp
     bind *:{{$port}}
-    {{range $taskIndex, $taskJson := ls (printf "marathon/%s/tasks" $root.Key)}}{{with $task := parseJSON $taskJson.Value}}
+    {{range $taskIndex, $taskJson := $tasks}}{{with $task := parseJSON $taskJson.Value}}
     {{if ne $task.taskStatus "TASK_RUNNING"}}# {{end}}server {{$task.id}} {{$task.host}}:{{index $task.ports $index}} # {{$task.taskStatus}}
     {{else}}{{end}}{{else}}
     # no tasks for {{$root.Key}}_{{$port}}{{end}}
-{{else}}
+{{else}}{{/* else for with $tasks */}}
+# no tasks for backend (port {{$port}}), not generating
+{{end}}{{else}}
 # {{$root.Key}} has no ports
 {{end}}{{else}}
 # {{$root.Key}} is blank or invalid JSON
-{{end}}{{end}}{{end}}
+{{end}}{{end}}{{end}}{{/* ends for outer range, with $root, and with $app */}}
