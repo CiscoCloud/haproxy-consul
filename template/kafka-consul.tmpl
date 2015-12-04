@@ -1,0 +1,19 @@
+global
+    maxconn {{or (key "service/haproxy/maxconn") 256}}
+    debug
+
+defaults
+    mode http
+    timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
+    timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
+    timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
+
+    # Generated automatically by consul-template
+    # Used for ElasticSearch
+
+listen kafka :9092
+    mode tcp
+    option tcplog
+    balance leastconn
+{{ range services }}{{ if in .Name "broker" }}{{ range service .Name }}    server {{.Name}} {{.Address}}:{{.Port}}
+{{ end }}{{ end }}{{ end }}

@@ -1,0 +1,26 @@
+global
+    maxconn {{or (key "service/haproxy/maxconn") 256}}
+    debug
+
+defaults
+    mode http
+    timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
+    timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
+    timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
+
+    # Generated automatically by consul-template
+    # Used for ElasticSearch
+
+
+listen es-http :9200
+        mode http
+        balance roundrobin
+{{ range service "elasticsearch-executor" }}{{ if .Tags | contains "CLIENT_PORT" }}
+    server {{.Name}} {{.Address}}:{{.Port}}{{end}}{{end}}
+
+listen es-transport :9300
+        mode tcp
+        option tcplog
+        balance leastconn
+{{ range service "elasticsearch-executor" }}{{ if .Tags | contains "TRANSPORT_PORT" }}
+    server {{.Name}} {{.Address}}:{{.Port}}{{end}}{{end}}
