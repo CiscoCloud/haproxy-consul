@@ -6,6 +6,7 @@ set -e
 
 # Required vars
 HAPROXY_MODE=${HAPROXY_MODE:-consul}
+HAPROXY_DOMAIN=${HAPROXY_DOMAIN:-haproxy.service.consul}
 CONSUL_TEMPLATE=${CONSUL_TEMPLATE:-/usr/local/bin/consul-template}
 CONSUL_CONFIG=${CONSUL_CONFIG:-/consul-template/config.d}
 CONSUL_CONNECT=${CONSUL_CONNECT:-consul.service.consul:8500}
@@ -60,6 +61,12 @@ function launch_haproxy {
     if [ ! -f /consul-template/template.d/haproxy.tmpl ]; then
       ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
             /consul-template/template.d/haproxy.tmpl
+    fi
+
+    # Generate self-signed certificate, if required.
+    if [ -n "${HAPROXY_USESSL}" -a ! -f /haproxy/ssl.crt ]; then
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout /haproxy/key.pem -out /haproxy/cert.pem -days 365 -sha256 -subj "/CN=*.${HAPROXY_DOMAIN}"
+      cat /haproxy/cert.pem /haproxy/key.pem > /haproxy/ssl.crt
     fi
 
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
