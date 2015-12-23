@@ -45,5 +45,5 @@ frontend www-ssl
 {{ range services }}
 backend {{ .Name }}_backend
 {{ range service .Name }}
-   server {{ .Node }} {{ .Address }}:{{ .Port }}{{ end }}
+   server {{ .Node }}-{{ .Port }} {{ .Address }}:{{ .Port }}{{ end }}
 {{ end }}
