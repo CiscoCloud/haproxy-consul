@@ -1,15 +1,26 @@
 global
     maxconn {{or (key "service/haproxy/maxconn") 256}}
     debug
+    # Recommended SSL ciphers as per https://hynek.me/articles/hardening-your-web-servers-ssl-ciphers/
+    ssl-default-bind-options no-sslv3
+    ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+
+    ssl-default-server-options no-sslv3
+    ssl-default-server-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+    tune.ssl.default-dh-param 2048
 
 defaults
     mode http
+    option forwardfor
+    option http-server-close
     timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
     timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
     timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
 
+### HTTP frontend ###
 frontend www
     bind *:80
+    reqadd X-Forwarded-Proto:\ http
 
     # Generated automatically by consul-template
 {{ range services }}
@@ -17,6 +28,20 @@ frontend www
     use_backend {{ .Name }}_backend if host_{{ .Name }}
 {{ end }}
 
+{{ if env "HAPROXY_USESSL" | parseBool }}
+### HTTPS/SSL frontend ###
+frontend www-ssl
+    bind *:443 ssl crt /haproxy/ssl.crt
+    reqadd X-Forwarded-Proto:\ https
+
+    # Generated automatically by consul-template
+{{ range services }}
+    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
+    use_backend {{ .Name }}_backend if host_{{ .Name }}
+{{ end }}
+{{ end }}
+
+### Consul-configured backend services ###
 {{ range services }}
 backend {{ .Name }}_backend
 {{ range service .Name }}
