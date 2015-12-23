@@ -69,6 +69,14 @@ function launch_haproxy {
       cat /haproxy/cert.pem /haproxy/key.pem > /haproxy/ssl.crt
     fi
 
+    # Remove haproxy PID file, in case we're restarting
+    [ -f /var/run/haproxy.pid ] && rm /var/run/haproxy.pid
+
+    # Force a template regeneration on restart (if this file hasn't changed,
+    # consul-template won't run the 'optional command' and thus haproxy won't
+    # be started)
+    [ -f /haproxy/haproxy.cfg ] && rm /haproxy/haproxy.cfg
+
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \
                        -wait ${CONSUL_MINWAIT}:${CONSUL_MAXWAIT} \
