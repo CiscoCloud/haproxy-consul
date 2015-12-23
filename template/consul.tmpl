@@ -17,10 +17,16 @@ defaults
     timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
     timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
 
-### HTTP frontend ###
+### HTTP(S) frontend ###
 frontend www
     bind *:80
-    reqadd X-Forwarded-Proto:\ http
+    {{ if env "HAPROXY_USESSL" }}bind *:443 ssl crt /haproxy/ssl.crt{{ end }}
+
+    reqadd X-Forwarded-Proto:\ http if !{ ssl_fc }
+    reqadd X-Forwarded-Proto:\ https if { ssl_fc }
+    {{ if eq (env "HAPROXY_USESSL") "force" }}
+    # Redirect all non-secure connections to HTTPS
+    redirect scheme https if !{ ssl_fc }{{ end }}
 
     # Generated automatically by consul-template
 {{ range services }}
@@ -28,18 +34,6 @@ frontend www
     use_backend {{ .Name }}_backend if host_{{ .Name }}
 {{ end }}
 
-{{ if env "HAPROXY_USESSL" | parseBool }}
-### HTTPS/SSL frontend ###
-frontend www-ssl
-    bind *:443 ssl crt /haproxy/ssl.crt
-    reqadd X-Forwarded-Proto:\ https
-
-    # Generated automatically by consul-template
-{{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
-    use_backend {{ .Name }}_backend if host_{{ .Name }}
-{{ end }}
-{{ end }}
 
 ### Consul-configured backend services ###
 {{ range services }}

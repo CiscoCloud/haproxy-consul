@@ -212,6 +212,8 @@ For example:
 docker run -v /etc/ssl/wildcard.example.com.pem:/haproxy/ssl.crt -e HAPROXY_USESSL=true -e HAPROXY_DOMAIN=example.com --net=host --name=haproxy haproxy-consul
 ```
 
+You can also force that all incoming connections are redirected to HTTPS, by setting `HAPROXY_USESSL=force`.
+
 SSL termination is currently only available in 'consul' mode.
 
 # License
