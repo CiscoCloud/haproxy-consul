@@ -57,8 +57,10 @@ function launch_haproxy {
 
     vars=$@
 
-    ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
-          /consul-template/template.d/haproxy.tmpl
+    if [ ! -f /consul-template/template.d/haproxy.tmpl ]; then
+      ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
+            /consul-template/template.d/haproxy.tmpl
+    fi
 
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \
