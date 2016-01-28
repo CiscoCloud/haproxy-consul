@@ -57,7 +57,10 @@ function launch_haproxy {
 
     vars=$@
 
-    ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
+    # Remove any old generated haproxy.cfg"
+    rm -f /haproxy/haproxy.cfg
+
+    ln -f -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
           /consul-template/template.d/haproxy.tmpl
 
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
