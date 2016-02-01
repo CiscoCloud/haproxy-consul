@@ -1,11 +1,12 @@
-FROM gliderlabs/alpine
+FROM alpine:3.3
 
 MAINTAINER Steven Borrelli <steve@aster.is>
 
-ENV CONSUL_TEMPLATE_VERSION=0.11.1
 ENV CONSUL_TEMPLATE_VERSION=0.12.2
 
-RUN apk-install bash haproxy ca-certificates unzip
+RUN apk update && \
+    apk add bash haproxy ca-certificates zip && \
+    rm -rf /var/cache/apk/*
 
 ADD https://releases.hashicorp.com/consul-template/${CONSUL_TEMPLATE_VERSION}/consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip /
 
