@@ -3,6 +3,7 @@ FROM gliderlabs/alpine
 MAINTAINER Steven Borrelli <steve@aster.is>
 
 ENV CONSUL_TEMPLATE_VERSION=0.11.1
+ENV CONSUL_TEMPLATE_VERSION=0.12.2
 
 RUN apk-install bash haproxy ca-certificates unzip
 
