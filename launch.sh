@@ -6,6 +6,7 @@ set -e
 
 # Required vars
 HAPROXY_MODE=${HAPROXY_MODE:-consul}
+HAPROXY_DOMAIN=${HAPROXY_DOMAIN:-haproxy.service.consul}
 CONSUL_TEMPLATE=${CONSUL_TEMPLATE:-/usr/local/bin/consul-template}
 CONSUL_CONFIG=${CONSUL_CONFIG:-/consul-template/config.d}
 CONSUL_CONNECT=${CONSUL_CONNECT:-consul.service.consul:8500}
@@ -57,11 +58,24 @@ function launch_haproxy {
 
     vars=$@
 
-    # Remove any old generated haproxy.cfg"
-    rm -f /haproxy/haproxy.cfg
+    if [ ! -f /consul-template/template.d/haproxy.tmpl ]; then
+      ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
+            /consul-template/template.d/haproxy.tmpl
+    fi
 
-    ln -f -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
-          /consul-template/template.d/haproxy.tmpl
+    # Generate self-signed certificate, if required.
+    if [ -n "${HAPROXY_USESSL}" -a ! -f /haproxy/ssl.crt ]; then
+      openssl req -x509 -newkey rsa:2048 -nodes -keyout /haproxy/key.pem -out /haproxy/cert.pem -days 365 -sha256 -subj "/CN=*.${HAPROXY_DOMAIN}"
+      cat /haproxy/cert.pem /haproxy/key.pem > /haproxy/ssl.crt
+    fi
+
+    # Remove haproxy PID file, in case we're restarting
+    [ -f /var/run/haproxy.pid ] && rm /var/run/haproxy.pid
+
+    # Force a template regeneration on restart (if this file hasn't changed,
+    # consul-template won't run the 'optional command' and thus haproxy won't
+    # be started)
+    [ -f /haproxy/haproxy.cfg ] && rm /haproxy/haproxy.cfg
 
     ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \

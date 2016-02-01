@@ -15,6 +15,7 @@ Dynamic haproxy configuration using consul packed into a Docker container that w
             - [Marathon Configuration](#marathon-configuration)
         - [Usage](#usage)
     - [Options](#options)
+        - [SSL Termination](#ssl-termination)
 - [License](#license)
 
 <!-- markdown-toc end -->
@@ -179,6 +180,7 @@ Variable | Description | Default
 ---------|-------------|---------
 `HAPROXY_DOMAIN` | The domain to match against | `haproxy.service.consul` (for `app.haproxy.service.consul`).
 `HAPROXY_MODE` | forward consul service or Marathon apps | `consul` (`marathon` also available, as described [above](#modes))
+`HAPROXY_USESSL` | Enable the SSL frontend (see [below](#ssl-termination)) | `false`
 
 consul-template variables:
 
@@ -198,6 +200,21 @@ Variable | Description | Default
 `service/haproxy/timeouts/connect` | connect timeout | 5000ms
 `service/haproxy/timeouts/client` | client timeout | 50000ms
 `service/haproxy/timeouts/server` | server timeout | 50000ms
+
+### SSL Termination
+
+If you wish to configure HAproxy to terminate incoming SSL connections, you must set the environment variable `HAPROXY_USESSL=true`, and mount your SSL certificate at `/haproxy/ssl.crt` - this file should contain both the SSL certificate and the private key to use (with no passphrase), in PEM format. You should also include any intermediate certificates in this bundle.
+
+If you do not provide an SSL certificate at container runtime, a self-signed certificate will be generated for the value of `*.HAPROXY_DOMAIN`.
+
+For example:
+```
+docker run -v /etc/ssl/wildcard.example.com.pem:/haproxy/ssl.crt -e HAPROXY_USESSL=true -e HAPROXY_DOMAIN=example.com --net=host --name=haproxy haproxy-consul
+```
+
+You can also force that all incoming connections are redirected to HTTPS, by setting `HAPROXY_USESSL=force`.
+
+SSL termination is currently only available in 'consul' mode.
 
 # License
 
