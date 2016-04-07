@@ -77,7 +77,7 @@ function launch_haproxy {
     # be started)
     [ -f /haproxy/haproxy.cfg ] && rm /haproxy/haproxy.cfg
 
-    ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
+    exec ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \
                        -wait ${CONSUL_MINWAIT}:${CONSUL_MAXWAIT} \
                        -consul ${CONSUL_CONNECT} ${ctargs} ${vars}
