@@ -30,7 +30,7 @@ frontend www
 
     # Generated automatically by consul-template
 {{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
+    acl host_{{ .Name }} hdr_beg(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
     use_backend {{ .Name }}_backend if host_{{ .Name }}
 {{ end }}
 
