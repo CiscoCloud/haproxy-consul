@@ -1,6 +1,6 @@
 global
-    maxconn {{or (key "service/haproxy/maxconn") 256}}
     debug
+    maxconn 4000
     # Recommended SSL ciphers as per https://hynek.me/articles/hardening-your-web-servers-ssl-ciphers/
     ssl-default-bind-options no-sslv3
     ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
@@ -11,33 +11,50 @@ global
 
 defaults
     mode http
+    timeout connect 10000 # default 10 second time out if a backend is not found
+    timeout client 300000 # 5 min timeout for client
+    timeout server 300000 # 5 min timeout for server
     option forwardfor
     option http-server-close
-    timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
-    timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
-    timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
 
-### HTTP(S) frontend ###
 frontend www
     bind *:80
-    {{ if env "HAPROXY_USESSL" }}bind *:443 ssl crt /haproxy/ssl.crt{{ end }}
+    bind *:443 ssl crt /certs/
+# Generated automatically by consul-template
 
-    reqadd X-Forwarded-Proto:\ http if !{ ssl_fc }
-    reqadd X-Forwarded-Proto:\ https if { ssl_fc }
-    {{ if eq (env "HAPROXY_USESSL") "force" }}
-    # Redirect all non-secure connections to HTTPS
-    redirect scheme https if !{ ssl_fc }{{ end }}
+#tagged services, tag is use for domain information
+{{ range $tag, $services := services | byTag }}
+# www default redirect for domain {{ $tag |replaceAll "_" "." }}:
+    acl default_{{ $tag}} hdr(host) -i {{ $tag |replaceAll "_" "." }}
+    redirect prefix http://www.{{ $tag |replaceAll "_" "."}} if default_{{ $tag}}
+{{ end }}
 
-    # Generated automatically by consul-template
-{{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
+{{ range $tag, $services := services | byTag }}
+# services for domain {{ $tag |replaceAll "_" "." }}:
+{{ range $services}}
+    acl host_{{ .Name }}_{{ $tag}} hdr(host) -i {{ .Name }}.{{ $tag |replaceAll "_" "." }}
+    use_backend {{ .Name }}_{{$tag}}_backend if host_{{ .Name }}_{{ $tag }}
+{{ end }}
+{{ end }}
+
+#not tagged services, the url starting part is used
+{{range services}}{{if eq (.Tags |len) 0 }}
+    acl host_{{ .Name }} hdr(host) -m beg {{ .Name }}.
     use_backend {{ .Name }}_backend if host_{{ .Name }}
-{{ end }}
+{{ end }}{{ end }}
 
+#backend definition for tagged services
+{{ range $tag, $services := services | byTag }}{{range $services}}
+backend {{ .Name }}_{{$tag}}_backend
+   http-request set-header X-Forwarded-Port %[dst_port]
+   http-request add-header X-Forwarded-Proto https if { ssl_fc }{{ range service (print $tag "." .Name) }}
+   server {{ .Node }} {{ .Address }}:{{ .Port }} check{{ end }}
+{{ end }}{{ end }}
 
-### Consul-configured backend services ###
-{{ range services }}
+#backend definition for untagged services
+{{ range services }}{{ if eq (.Tags |len) 0 }}
 backend {{ .Name }}_backend
-{{ range service .Name }}
-   server {{ .Node }}-{{ .Port }} {{ .Address }}:{{ .Port }}{{ end }}
-{{ end }}
+   http-request set-header X-Forwarded-Port %[dst_port]
+   http-request add-header X-Forwarded-Proto https if { ssl_fc }{{ range service .Name }}
+   server {{ .Node }} {{ .Address }}:{{ .Port }} check{{ end }}
+{{ end }}{{ end }}
