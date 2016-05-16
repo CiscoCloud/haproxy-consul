@@ -1,6 +1,6 @@
 # haproxy-consul
 
-Dynamic haproxy configuration using consul packed into a Docker container that weighs 18MB.
+Dynamic haproxy configuration using consul packed into a Docker container that weighs 24MB.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
 **Table of Contents**
