@@ -1,6 +1,6 @@
 # haproxy-consul
 
-Dynamic haproxy configuration using consul packed into a Docker container that weighs 24MB.
+Dynamic haproxy configuration using consul packed into a Docker container that weighs 32MB.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
 **Table of Contents**
@@ -64,8 +64,13 @@ This will make the webserver's 80 port accessible through request to `www.exampl
 ### Usage
 Start the container as follows:
 ```
-docker run --net=host --name=haproxy -d asteris/haproxy-consul
+docker run --net=host --name=haproxy -d auguster/haproxy-consul
 ```
+alternative way not sharing network stack with host:
+```
+docker run -d --name haproxy -p 80:80 -p 443:443 -e CONSUL_CONNECT=172.17.0.1:8500 auguster/haproxy-consul
+```
+
 Now that it is set up, connect to an app:
 ```
 curl -L http://myapp.mycompany.com
@@ -80,7 +85,7 @@ curl -L http://myapp.180.19.20.21.xip.io
 If you want to override the config and template files, mount a volume and set the `CONSUL_CONFIG` environment variable before launch. In docker this can be accomplished with the `-e` option:
 
 ```
-docker run -v /host/config:/my_config -e CONSUL_CONFIG=/my_config -net=host --name=haproxy -d asteris/haproxy-consul
+docker run -v /host/config:/my_config -e CONSUL_CONFIG=/my_config -net=host --name=haproxy -d auguster/haproxy-consul
 ```
 
 If you need to have a root CA added so you can connect to Consul over SSL, mount
@@ -102,7 +107,7 @@ If you wish to configure HAproxy to terminate incoming SSL connections, you must
 
 For example:
 ```
-docker run -v /etc/ssl/wildcard.example.com.pem:/certs/ssl.crt:ro --net=host --name=haproxy haproxy-consul
+docker run -v /etc/ssl/wildcard.example.com.pem:/certs/ssl.crt:ro --net=host --name=haproxy auguster/haproxy-consul
 ```
 SSL termination is currently only available in 'consul' mode.
 
