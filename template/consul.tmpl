@@ -30,8 +30,15 @@ frontend www
 
     # Generated automatically by consul-template
 {{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }} 
+    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }}
     use_backend {{ .Name }}_backend if host_{{ .Name }}
+{{ end }}
+
+{{ if env "HAPROXY_STATS" }}
+frontend stats
+    bind *:1936
+    mode http
+    use_backend stats
 {{ end }}
 
 
@@ -40,4 +47,15 @@ frontend www
 backend {{ .Name }}_backend
 {{ range service .Name }}
    server {{ .Node }}-{{ .Port }} {{ .Address }}:{{ .Port }}{{ end }}
+{{ end }}
+
+{{ if env "HAPROXY_STATS" }}
+
+backend stats
+    stats enable
+    stats hide-version
+    stats refresh 5s
+    stats scope .
+    stats realm {{ or (env "HAPROXY_STATS_TITLE") "Haproxy Statistics" }}
+    stats uri {{ or (env "HAPROXY_STATS_URI") "/haproxy?stats" }}
 {{ end }}
