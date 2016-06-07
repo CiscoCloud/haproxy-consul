@@ -18,6 +18,8 @@ RUN mkdir -p /haproxy /consul-template/config.d /consul-template/template.d
 
 ADD config/ /consul-template/config.d/
 ADD template/ /consul-template/template.d/
+
+ADD reload.sh /reload.sh
 ADD launch.sh /launch.sh
 
 CMD ["/launch.sh"]
