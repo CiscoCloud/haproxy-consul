@@ -45,8 +45,9 @@ function reload_configuration {
     if [[ "$(/usr/sbin/haproxy -c -f /tmp/haproxy.cfg)" ]]; then
         echo "Configuration valid. Going to reload HA Proxy."
         mv /tmp/haproxy.cfg /haproxy/haproxy.cfg
+        nl-qdisc-add --dev=lo --parent=1:4 --id=40: --update plug --buffer &> /dev/null
         /usr/sbin/haproxy -f /haproxy/haproxy.cfg -D -p "/var/run/haproxy.pid" -sf "${PID}"  || return 1
-        kill "${PID}"
+        nl-qdisc-add --dev=lo --parent=1:4 --id=40: --update plug--release-indefinite &> /dev/null
         return 0
     else
         return 1
