@@ -1,4 +1,4 @@
-FROM alpine:3.3
+FROM alpine:3.4
 
 MAINTAINER Steven Borrelli <steve@aster.is>
 
@@ -15,7 +15,6 @@ RUN unzip /consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip  && \
     rm -rf /consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip
 
 RUN mkdir -p /haproxy /consul-template/config.d /consul-template/template.d
-
 ADD config/ /consul-template/config.d/
 ADD template/ /consul-template/template.d/
 
