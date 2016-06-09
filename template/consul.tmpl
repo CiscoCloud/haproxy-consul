@@ -56,6 +56,13 @@ backend stats
     stats hide-version
     stats refresh 5s
     stats scope .
+    {{ range services }}
+    {{ range service .Name }}
+       stats scope {{ .Name }}_backend
+    {{ end }}
+    {{ end }}
+
+    stats show-node
     stats realm {{ or (env "HAPROXY_STATS_TITLE") "Haproxy Statistics" }}
     stats uri {{ or (env "HAPROXY_STATS_URI") "/" }}
 {{ end }}
