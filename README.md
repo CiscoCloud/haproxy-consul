@@ -46,6 +46,11 @@ haproxy-consul can run in two different modes: forwarding either consul services
 `HAPROXY_MODE` variable, which should be set to `consul` or
 `marathon`.
 
+#### Reload configuration
+
+It's possible to reload the HA proxy configuration without restarting the container itself.
+`docker exec -it <container_id> bash reload.sh`
+
 #### consul Configuration
 
 When `HAPROXY_MODE` is set to `consul`, haproxy-consul uses consul service names
@@ -181,6 +186,9 @@ Variable | Description | Default
 `HAPROXY_DOMAIN` | The domain to match against | `haproxy.service.consul` (for `app.haproxy.service.consul`).
 `HAPROXY_MODE` | forward consul service or Marathon apps | `consul` (`marathon` also available, as described [above](#modes))
 `HAPROXY_USESSL` | Enable the SSL frontend (see [below](#ssl-termination)) | `false`
+`HAPROXY_STATS` | Enable Statistics UI on port 1936 (see [below](#ssl-termination)) | `false`
+`HAPROXY_STATS_TITLE` | Change Statistics Title (see [below](#ssl-termination)) | `false`
+`HAPROXY_STATS_URI` | Change Statistics URI (see [below](#ssl-termination)) | `false`
 
 consul-template variables:
 
@@ -190,7 +198,7 @@ Variable | Description | Default
 `CONSUL_CONNECT`  | The consul connection | `consul.service.consul:8500`
 `CONSUL_CONFIG`   | File/directory for consul-template config | `/consul-template/config.d`
 `CONSUL_LOGLEVEL` | Valid values are "debug", "info", "warn", and "err". | `debug`
-`CONSUL_TOKEN`    | The [Consul API token](http://www.consul.io/docs/internals/acl.html) | 
+`CONSUL_TOKEN`    | The [Consul API token](http://www.consul.io/docs/internals/acl.html) |
 
 consul KV variables:
 
