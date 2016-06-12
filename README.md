@@ -1,6 +1,6 @@
 # haproxy-consul
 
-Dynamic haproxy configuration using consul packed into a Docker container that weighs 24MB.
+Dynamic haproxy configuration using consul packed into a Docker container that weighs 33MB.
 
 # Overview
 
