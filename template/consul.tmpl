@@ -19,6 +19,7 @@ defaults
     option forwardfor
     option http-server-close
 
+### HTTP(S) frontend ###
 frontend www
     bind *:80
 {{ if env "HAPROXY_USESSL" }}    bind *:443 ssl crt /certs/{{ end }}
@@ -45,6 +46,14 @@ frontend www
     use_backend {{ .Name }}_backend if host_{{ .Name }}
 {{ end }}{{ end }}
 
+{{ if env "HAPROXY_STATS" }}
+frontend stats
+    bind *:1936
+    mode http
+    use_backend stats
+{{ end }}
+
+### Consul-configured backend services ###
 #backend definition for tagged services
 {{ range $tag, $services := services | byTag }}{{range $services}}
 backend {{ .Name }}_{{$tag}}_backend
@@ -60,3 +69,13 @@ backend {{ .Name }}_backend
    http-request add-header X-Forwarded-Proto https if { ssl_fc }{{ end }}{{ range service .Name }}
    server {{ .Node }} {{ .Address }}:{{ .Port }} check{{ end }}
 {{ end }}{{ end }}
+
+{{ if env "HAPROXY_STATS" }}
+backend stats
+    stats enable
+    stats hide-version
+    stats refresh 5s
+    stats scope .
+    stats realm {{ or (env "HAPROXY_STATS_TITLE") "Haproxy Statistics" }}
+    stats uri {{ or (env "HAPROXY_STATS_URI") "/" }}
+{{ end }}

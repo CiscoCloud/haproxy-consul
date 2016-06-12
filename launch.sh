@@ -48,39 +48,40 @@ USAGE
 }
 
 function launch_haproxy {
-    if [ "$(ls -A /usr/local/share/ca-certificates)" ]; then
+    if [[ "$(ls -A /usr/local/share/ca-certificates)" ]]; then
         cat /usr/local/share/ca-certificates/* >> /etc/ssl/certs/ca-certificates.crt
     fi
 
-    if [ -n "${CONSUL_TOKEN}" ]; then
+    if [[ -n "${CONSUL_TOKEN}" ]]; then
         ctargs="${ctargs} -token ${CONSUL_TOKEN}"
     fi
 
-    vars=$@
+    vars=( "$@" )
 
-    if [ ! -f /consul-template/template.d/haproxy.tmpl ]; then
+    if [[ ! -f /consul-template/template.d/haproxy.tmpl ]]; then
       ln -s /consul-template/template.d/${HAPROXY_MODE}.tmpl \
             /consul-template/template.d/haproxy.tmpl
     fi
 
     # Generate self-signed certificate, if required.
-    if [ -n "${HAPROXY_USESSL}" -a ! -f /haproxy/ssl.crt ]; then
+    if [[ ( -n "${HAPROXY_USESSL}" ) && ! -f /haproxy/ssl.crt ]]; then
       openssl req -x509 -newkey rsa:2048 -nodes -keyout /haproxy/key.pem -out /haproxy/cert.pem -days 365 -sha256 -subj "/CN=*.${HAPROXY_DOMAIN}"
       cat /haproxy/cert.pem /haproxy/key.pem > /haproxy/ssl.crt
     fi
 
     # Remove haproxy PID file, in case we're restarting
-    [ -f /var/run/haproxy.pid ] && rm /var/run/haproxy.pid
+    [[ -f /var/run/haproxy.pid ]] && rm /var/run/haproxy.pid
 
     # Force a template regeneration on restart (if this file hasn't changed,
     # consul-template won't run the 'optional command' and thus haproxy won't
     # be started)
-    [ -f /haproxy/haproxy.cfg ] && rm /haproxy/haproxy.cfg
+    [[ -f /haproxy/haproxy.cfg ]] && rm /haproxy/haproxy.cfg
 
     exec ${CONSUL_TEMPLATE} -config ${CONSUL_CONFIG} \
                        -log-level ${CONSUL_LOGLEVEL} \
                        -wait ${CONSUL_MINWAIT}:${CONSUL_MAXWAIT} \
-                       -consul ${CONSUL_CONNECT} ${ctargs} ${vars}
+                       -consul ${CONSUL_CONNECT} ${ctargs} "${vars[@]}"
+
 }
 
-launch_haproxy $@
+launch_haproxy "$@"
