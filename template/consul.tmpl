@@ -62,7 +62,6 @@ backend {{ .Name }}_tcp_backend
     # To be continued…
 {{end}}{{end}}
 
-{{ end }}
 {{ if env "HAPROXY_STATS" }}
 ## Backend definition for Statistics
 backend stats
@@ -74,11 +73,10 @@ backend stats
     {{ end }}
     stats scope .
     stats scope www
-    {{ range services }}
-    {{ range service .Name }}
-       stats scope {{ .Name }}_backend
-    {{ end }}
-    {{ end }}
+    {{range services}}{{ if in .Tags $haName}}{{range $service := service .Name }}{{if in .Tags $haName }}{{range $tag := .Tags}} {{ $pair := $tag | split "=" }} {{if (eq (index $pair 0) "http")}}
+    stats scope {{ $service.Name }}_http_backend{{end}}{{if (eq (index $pair 0) "https")}}
+    stats scope {{ $service.Name }}_https_backend{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}
     stats realm {{ or (env "HAPROXY_STATS_TITLE") "Haproxy Statistics" }}
     stats uri {{ or (env "HAPROXY_STATS_URI") "/" }}
+{{ end }}
 {{ end }}
