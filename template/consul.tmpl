@@ -1,7 +1,6 @@
 global
     debug
-    maxconn {{ or (env "HAPROXY_MAXCONN") 256 }}
-{{ if env "HAPROXY_USESSL" }}
+    maxconn {{ or (env "HAPROXY_MAXCONN") 20000 }}
     # Recommended SSL ciphers as per https://hynek.me/articles/hardening-your-web-servers-ssl-ciphers/
     ssl-default-bind-options no-sslv3
     ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
@@ -9,10 +8,10 @@ global
     ssl-default-server-options no-sslv3
     ssl-default-server-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
     tune.ssl.default-dh-param 2048
-{{ end }}
 
 defaults
     mode http
+    maxconn {{ or (env "HAPROXY_MAXCONN") 20000 }}
     timeout connect 10000
     timeout client 300000
     timeout server 300000
@@ -23,21 +22,24 @@ defaults
 
 frontend www
     bind *:80
-{{ if env "HAPROXY_USESSL" }}    bind *:443 ssl crt /certs/{{ end }}
+    {{ if (not (env "HAPROXY_NOSSL")) }}bind *:443 ssl crt /certs/{{ end }}
     reqadd X-Forwarded-Proto:\ http if !{ ssl_fc }
     reqadd X-Forwarded-Proto:\ https if { ssl_fc }
+{{with $haName := (env "HAPROXY_NAME")}}
 ## Tagged services, tag is used for domain information
-{{ range $domain := env "HAPROXY_DOMAINS" }}
-{{ range $tag, $services := services | byTag }}
-{{ range $services}}
-## Frontend definition for domain {{ .Name }}.{{ $tag |replaceAll "." "_" }}:
-    acl host_{{ .Name }}_{{ $tag |replaceAll "." "_" }} hdr_beg(host) -i {{ .Name }}.{{ $tag |replaceAll "." "_" }}
-    {{ if in $tag "forcessl"}}redirect scheme https if !{ ssl_fc } host_{{ .Name }}_{{ $tag |replaceAll "." "_" }}
-    use_backend {{ .Name }}_{{ $tag |replaceAll "." "_" }}_backend if host_{{ .Name }}_{{ $tag |replaceAll "." "_" }}
-{{end}}{{end}}{{end}}{{end}}
-
-## Frontend definition for Statistics
+{{ range services }}{{ if in .Tags $haName }}
+## Frontend definition for domain {{ .Name }}
+{{range $service := service .Name}}{{ range $tag := .Tags }}{{$pair := $tag | split "="}}{{$value := index $pair 1}}{{$config := $value | split "|"}}{{ $domain := index $config 0 }}{{if (eq (index $pair 0) "http")}}
+    acl host_{{ $service.Name }}_http hdr_beg(host) -i {{ $domain }}
+    use_backend {{ $service.Name }}_http_backend if host_{{$service.Name}}_http{{end}}{{if (eq (index $pair 0) "https")}}
+    acl host_{{ $service.Name }}_https hdr_beg(host) -i {{ $domain }}
+    use_backend {{ $service.Name }}_https_backend if host_{{$service.Name}}_https{{end}}{{if (gt (len $config) 1)}}{{ $ssl := index $config 1}}{{if (eq $ssl "forcessl") }}
+    redirect scheme https if !{ ssl_fc } host_{{ $service.Name }}_http{{end}}
+    {{end}}{{end}}
+{{end}}
+{{end}}{{end}}
 {{ if env "HAPROXY_STATS" }}
+## Frontend definition for Statistics
 frontend stats
     bind *:1936
     mode http
@@ -45,21 +47,24 @@ frontend stats
 {{ end }}
 
 ###### Backend definitions ######
-
 # Backend definitions for tagged services
-{{ range $domain := (env "HAPROXY_DOMAINS" | split " ") }}
-{{ range $tag, $services := services | byTag }}{{range $services}}
-{{ if (eq $tag (index ($domain | split ",") 0)) }}
-## Backend definition for tagged service { (index ($domain | split ",") 0)) |replaceAll "." "_" }}:
-backend {{ .Name }}_{{ $tag |replaceAll "." "_" }}_backend
-   http-request set-header X-Forwarded-Port %[dst_port]{{ if env "HAPROXY_USESSL" }}
-   http-request add-header X-Forwarded-Proto https if { ssl_fc }{{ end }}{{ range service (print $tag "." .Name) }}
-   server {{ .Node }} {{ .Address }}:{{ .Port }} check{{ end }}
-{{ end }}{{ end }}{{ end }}{{ end }}
+{{range services}}{{ if in .Tags $haName}}
+## Backend for service {{.Name}}
+backend {{.Name}}_http_backend
+    {{range $service := service .Name}} {{if in .Tags $haName}} {{range $tag := .Tags}} {{ $pair := $tag | split "=" }} {{if (eq (index $pair 0) "http")}}
+    server {{ $service.Node }} {{ $service.Address }}:{{ $service.Port }} check{{ end }}{{ end }}{{ end }}{{ end }}
+backend {{ .Name }}_https_backend
+    http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    {{range $service := service .Name}} {{if in .Tags $haName}} {{range $tag := .Tags}} {{ $pair := $tag | split "=" }} {{if (eq (index $pair 0) "https")}}
+    server {{ $service.Node }} {{ $service.Address }}:{{ $service.Port }} check ssl verify none{{ end }}{{ end }}{{ end }}{{ end }}
+backend {{ .Name }}_tcp_backend
+    # To be continued…
+{{end}}{{end}}
 
-
-## Backend definition for Statistics
+{{ end }}
 {{ if env "HAPROXY_STATS" }}
+## Backend definition for Statistics
 backend stats
     stats enable
     stats hide-version
