@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/dumb-init /bin/bash
 
 set -e
 #set the DEBUG env variable to turn on debugging
