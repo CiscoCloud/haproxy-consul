@@ -32,3 +32,24 @@ ADD reload.sh /reload.sh
 ADD launch.sh /launch.sh
 
 CMD ["/launch.sh"]
+
+### Udacity Image Metadata
+COPY Dockerfile /Dockerfile
+
+ARG udacity_name
+ARG udacity_version
+ARG udacity_git_url
+ARG udacity_git_sha
+ARG udacity_build_id
+ARG udacity_build_timestamp
+ARG udacity_build_origin
+
+LABEL com.udacity.name="$udacity_name" \
+      com.udacity.version="$udacity_version" \
+      com.udacity.git.url="$udacity_git_url" \
+      com.udacity.git.sha="$udacity_git_sha" \
+      com.udacity.build.id="$udacity_build_id" \
+      com.udacity.build.timestamp="$udacity_build_timestamp" \
+      com.udacity.build.origin="$udacity_build_origin" \
+      com.udacity.dockerfile="/Dockerfile" \
+      com.udacity.api.packages="apk info -vv"

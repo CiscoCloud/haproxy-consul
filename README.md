@@ -1,6 +1,9 @@
 # haproxy-consul
 
-Dynamic haproxy configuration using consul packed into a Docker container that weighs 18MB.
+### Udacity Note
+*This image includes haproxy built with debug symbols and SLZ instead of zlib*
+
+Dynamic haproxy configuration using consul packed into a Docker container that weighs 28MB.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc/generate-toc again -->
 **Table of Contents**
