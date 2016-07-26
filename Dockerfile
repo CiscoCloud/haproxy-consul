@@ -4,9 +4,7 @@ MAINTAINER Steven Borrelli <steve@aster.is>
 
 ENV CONSUL_TEMPLATE_VERSION=0.14.0
 
-RUN apk update && \
-    apk add libnl3 bash haproxy ca-certificates zip && \
-    rm -rf /var/cache/apk/*
+RUN apk add --no-cache libnl3 bash haproxy ca-certificates zip
 
 ADD https://releases.hashicorp.com/consul-template/${CONSUL_TEMPLATE_VERSION}/consul-template_${CONSUL_TEMPLATE_VERSION}_linux_amd64.zip /
 
