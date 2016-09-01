@@ -24,6 +24,12 @@ frontend www
     bind *:80
 {{ if env "HAPROXY_USESSL" }}    bind *:443 ssl crt /certs/ {{ end }}
 
+{{ if ne (service "letsencrypt" |len) 0 }}
+#there is a letsencrypt service redirecting acme-challenge
+acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+use_backend letsencrypt_backend if letsencrypt-acl
+{{ end }}
+
 # Generated automatically by consul-template
 
 {{ if ne (service "letsencrypt" |len) 0 }}
