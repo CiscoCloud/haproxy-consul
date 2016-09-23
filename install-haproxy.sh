@@ -31,9 +31,6 @@ make PREFIX=/usr TARGET=linux2628 USE_PCRE=1 USE_PCRE_JIT=1 USE_OPENSSL=1 \
 # install
 make PREFIX=/usr install-bin
 
-# install run dependencies
-apk add ${RUN_DEPS}
-
 # remove build dependencies
 apk del build-dependencies
 
