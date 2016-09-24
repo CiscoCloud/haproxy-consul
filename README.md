@@ -1,6 +1,6 @@
-# haproxy-consul
+# haproxy-consul [![](https://images.microbadger.com/badges/image/auguster/haproxy-consul.svg)](https://microbadger.com/images/auguster/cloud-config-server)
 
-Dynamic haproxy configuration using consul packed into a Docker container that weighs 33MB.
+Dynamic haproxy configuration using consul packed into a Docker container.
 
 # Overview
 
