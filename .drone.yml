@@ -1,0 +1,24 @@
+image: bradrydzewski/go:1.4
+notify:
+  email:
+    recipients:
+    - drone@clever.com
+  slack:
+    on_failure: true
+    on_started: false
+    on_success: false
+    webhook_url: $$slack_webhook
+publish:
+  docker:
+    docker_host: $$docker_server
+    email: $$docker_email
+    image_name: clever/haproxy-consul
+    password: $$docker_password
+    registry_login: true
+    tags:
+    - $(git rev-parse --short HEAD)
+    username: $$docker_username
+    when:
+      branch: master
+script:
+- make test
