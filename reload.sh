@@ -47,7 +47,7 @@ function reload_configuration {
         mv /tmp/haproxy.cfg /haproxy/haproxy.cfg
         nl-qdisc-add --dev=lo --parent=1:4 --id=40: --update plug --buffer &> /dev/null
         /usr/sbin/haproxy -f /haproxy/haproxy.cfg -D -p "/var/run/haproxy.pid" -sf "${PID}"  || return 1
-        nl-qdisc-add --dev=lo --parent=1:4 --id=40: --update plug--release-indefinite &> /dev/null
+        nl-qdisc-add --dev=lo --parent=1:4 --id=40: --update plug --release-indefinite &> /dev/null
         return 0
     else
         return 1
